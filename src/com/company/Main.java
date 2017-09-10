@@ -8,7 +8,11 @@ import org.opencv.features2d.Features2d;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
+import javax.xml.bind.annotation.XmlType;
+import java.awt.*;
+
 public class Main {
+    public static final double DISTANCE = 100;
 
     public static Mat colorToGray(Mat image) {
         Mat grayImage = new Mat(image.rows(), image.cols(), image.type());
@@ -24,8 +28,8 @@ public class Main {
 
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 
-        String objectFileName = "IMG_0977.JPG";
-        String sceneFileName = "IMG_0978.JPG";
+        String objectFileName = "experiment2/koin0.JPG";
+        String sceneFileName = "experiment2/koinScene.JPG";
 
         Mat objectImage = Imgcodecs.imread(objectFileName);
         Mat sceneImage = Imgcodecs.imread(sceneFileName);
@@ -62,7 +66,7 @@ public class Main {
         DescriptorMatcher matcher = DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE);
         matcher.match(objectDescripters, sceneDescripters, matchs);
 
-        int N = 50;
+        /*int N = 50;
         DMatch[] tmp1 = matchs.toArray();
         DMatch[] tmp2 = new DMatch[N];
         for (int i = 0; i < tmp2.length; i++) {
@@ -70,11 +74,53 @@ public class Main {
         }
         matchs.fromArray(tmp2);
 
-        Mat matchedImage = new Mat(objectImage.rows(), objectImage.cols() * 2, objectImage.type());
-        Features2d.drawMatches(objectImage, objectKeyPoint, sceneImage, sceneKeyPoint, matchs, matchedImage);
+        for (int i = 0; i < tmp2.length; i++) {
+            System.out.println(i + ":" + tmp2[i]);
+            System.out.println("  " + tmp2[i].distance);
+            //if (i < N) System.out.println("  " + tmp2[i]);
+        }*/
 
-        Imgcodecs.imwrite("descriptedImageByAKAZE.jpg", matchedImage);
+        int N = 0;
+        DMatch[] tmp1 = matchs.toArray();
+        for (int i = 0; i < tmp1.length; i++) {
+            if (tmp1[i].distance < DISTANCE) N++;
+        }
+        DMatch[] tmp2 = new DMatch[N];
+        int j = 0;
+        for (int i = 0; i < tmp1.length; i++) {
+            if (tmp1[i].distance < DISTANCE) {
+                tmp2[j] = tmp1[i];
+                j++;
+            }
+        }
+        matchs.fromArray(tmp2);
+
+        for (int i = 0; i < tmp2.length; i++) {
+            System.out.println(i + ":" + tmp2[i]);
+            System.out.println("  " + tmp2[i].distance);
+            //if (i < N) System.out.println("  " + tmp2[i]);
+        }
+
+        //表示するキーポイントを絞る
+        KeyPoint[] key = sceneKeyPoint.toArray();
+        KeyPoint[] printKey = new KeyPoint[tmp2.length];
+        for (int i = 0; i < tmp2.length; i++) {
+            printKey[i] = key[tmp2[i].trainIdx];
+            //System.out.println(i + ":" + key[i]);
+        }
+        sceneKeyPoint.fromArray(printKey);
+
+        Mat matchedImage = new Mat(objectImage.rows(), objectImage.cols() * 2, objectImage.type());
+        //Features2d.drawMatches(objectImage, objectKeyPoint, sceneImage, sceneKeyPoint, matchs, matchedImage);
+        //Features2d.drawMatches(null, null, sceneImage, null, null, matchedImage);
+        //Features2d.drawKeypoints(sceneImage, sceneKeyPoint, matchedImage);
+        Features2d.drawKeypoints(sceneImage, sceneKeyPoint, matchedImage, Scalar.all(-1), Features2d.DRAW_RICH_KEYPOINTS);
+        //Features2d.drawMatches(objectImage, objectKeyPoint, sceneImage, sceneKeyPoint, matchs, matchedImage, Scalar.all(-1), Scalar.all(0), MatOfByte.fromNativeAddr(), );
+
+        Imgcodecs.imwrite("experiment2/descriptedImage_koin0.jpg", matchedImage);
+        //Imgcodecs.imwrite("descriptedDedenneByAKAZE2.jpg", matchedImage);
         //Imgcodecs.imwrite("sameOutputImageByAKAZE.jpg", matchedImage);
+        //Imgcodecs.imwrite("compressDedenneByAKAZE4.jpg", matchedImage);
 
         long end = System.currentTimeMillis();
         System.out.println(end - start);
